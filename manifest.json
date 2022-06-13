@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Jira Bugzilla Integration Companion",
   "description": "Supplements the Jira Bugzilla Integration with in-browser assistance.",
-  "version": "1.0",
+  "version": "1.0.1",
 
   "page_action": {
     "default_icon": "icons/jira.svg",
