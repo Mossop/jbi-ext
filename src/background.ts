@@ -28,7 +28,7 @@ function pageActionConfig(message: TabMessage): PageActionConfig | null {
       if (message.jira) {
         return {
           title: "Open Jira Issue",
-          icon: "jira.ico",
+          icon: "jira.svg",
         };
       }
       break;
