@@ -37,9 +37,12 @@ function parseData() {
     document.querySelector<HTMLAnchorElement>("#field-value-see_also a")?.href
   );
 
-  sendMessage({
+  let bug = new URL("/show_bug.cgi", url);
+  bug.searchParams.set("id", id);
+
+  sendMessage("discovery", {
     source: "bugzilla",
-    page: url.toString(),
+    bug: bug.toString(),
     id,
     jira: jiraIssue?.href ?? null,
   });

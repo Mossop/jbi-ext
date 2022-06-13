@@ -1,6 +1,11 @@
-import browser, { PageAction, Runtime, Tabs } from "webextension-polyfill";
+import { PageAction, Runtime, Tabs } from "webextension-polyfill";
 import { JBI, JiraMap } from "./config";
-import { addMessageListener, JiraMessage, TabMessage } from "./ipc";
+import {
+  addMessageListener,
+  JiraMessage,
+  sendTabMessage,
+  TabMessage,
+} from "./ipc";
 
 interface Action {
   project: string;
@@ -88,7 +93,7 @@ function createBug(
       throw new Error(`Unknown action for ${jira.project}`);
     }
 
-    let page = new URL(jira.page);
+    let page = new URL(jira.jira);
     let bugzilla = JiraMap.get(page.origin);
 
     let createUrl = new URL("/enter_bug.cgi", bugzilla);
@@ -148,9 +153,19 @@ function onMessage(message: TabMessage, sender: Runtime.MessageSender) {
     return;
   }
 
-  console.log("onMessage", message);
   TabMap.set(tabId, message);
   updatePageAction(tabId, message);
+
+  if (message.source == "bugzilla" && message.jira) {
+    for (let [tabId, tabMessage] of TabMap) {
+      if (tabMessage.source == "jira" && tabMessage.jira == message.jira) {
+        sendTabMessage("link", tabId, {
+          bug: message.bug,
+          jira: message.jira,
+        });
+      }
+    }
+  }
 }
 
 async function loadConfig() {
@@ -177,7 +192,7 @@ async function loadConfig() {
 }
 
 function init() {
-  addMessageListener(onMessage);
+  addMessageListener("discovery", onMessage);
 
   browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
     TabMap.delete(removedTabId);

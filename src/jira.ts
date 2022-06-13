@@ -1,8 +1,16 @@
 import { JiraMap } from "./config";
-import { sendMessage } from "./ipc";
+import { addMessageListener, LinkDiscovered, sendMessage } from "./ipc";
 
 const GraphQLEndpoint = "/rest/graphql/1/";
 const GiraEndpoint = "/rest/gira/1/";
+
+const jiraId = `
+  query issueFields($issueKey: String!) {
+    issue(issueIdOrKey: $issueKey, latestVersion: true, screen: "view") {
+     id
+    }
+  }
+`;
 
 const jiraFields = `
   query issueFields($issueKey: String!) {
@@ -45,8 +53,9 @@ async function graphql(
   query: string,
   variables: Record<string, string> = {}
 ): Promise<any> {
-  let response = await fetch(endpoint, {
+  let response = await content.fetch(endpoint, {
     method: "POST",
+    mode: "same-origin",
     headers: {
       "Content-Type": "application/json",
     },
@@ -92,6 +101,21 @@ async function fetchJiraFields(
   return Object.fromEntries(fields.map(({ key, content }) => [key, content]));
 }
 
+async function fetchJiraId(
+  page: URL,
+  project: string,
+  id: string
+): Promise<string> {
+  let data = await graphql(new URL(GraphQLEndpoint, page), jiraId, {
+    issueKey: `${project}-${id}`,
+  });
+
+  return data.issue.id;
+}
+
+let project: string | undefined = undefined;
+let id: string | undefined = undefined;
+
 async function parseData() {
   let url = new URL(window.location.href);
 
@@ -106,7 +130,7 @@ async function parseData() {
     return;
   }
 
-  let [, project, id] = matches;
+  [, project, id] = matches;
   if (!project || !id) {
     return;
   }
@@ -124,14 +148,58 @@ async function parseData() {
     bug = null;
   }
 
-  sendMessage({
+  let jira = new URL(`/browse/${project}-${id}`, url);
+
+  sendMessage("discovery", {
     source: "jira",
-    page: url.toString(),
+    jira: jira.toString(),
     project,
     id,
     summary: fields.summary,
     bug: bug?.href ?? null,
   });
 }
+
+addMessageListener("link", async (link: LinkDiscovered) => {
+  if (!project || !id) {
+    return;
+  }
+
+  let jira = new URL(`/browse/${project}-${id}`, window.location.href);
+  if (link.jira != jira.toString()) {
+    return;
+  }
+
+  let links = await fetchJiraWebLinks(jira, project, id);
+  if (!links["Bugzilla Ticket"]) {
+    let icon = new URL("/favicon.ico", link.bug);
+    let internalId = await fetchJiraId(jira, project, id);
+    let remoteLink = new URL(
+      `/rest/api/3/issue/${internalId}/remotelink`,
+      jira
+    );
+
+    let response = await content.fetch(remoteLink, {
+      method: "POST",
+      mode: "cors",
+      referrerPolicy: "origin-when-cross-origin",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: jira.origin,
+      },
+      body: JSON.stringify({
+        object: {
+          icon: { url16x16: icon.toString() },
+          title: "Bugzilla Ticket",
+          url: link.bug,
+        },
+      }),
+    });
+
+    if (response.ok) {
+      window.location.reload();
+    }
+  }
+});
 
 parseData();

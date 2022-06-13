@@ -4,16 +4,12 @@ import type { RollupOptions } from "rollup";
 function config(name: string): RollupOptions {
   return {
     input: `src/${name}.ts`,
-    external: ["webextension-polyfill"],
     output: {
       dir: "build",
       name,
       sourcemap: true,
       interop: false,
       format: "iife",
-      globals: {
-        "webextension-polyfill": "browser",
-      },
     },
     plugins: [typescript()],
   };
