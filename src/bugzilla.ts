@@ -39,6 +39,7 @@ function parseData() {
 
   sendMessage({
     source: "bugzilla",
+    page: url.toString(),
     id,
     jira: jiraIssue?.href ?? null,
   });

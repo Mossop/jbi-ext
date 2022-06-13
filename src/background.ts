@@ -1,55 +1,25 @@
 import browser, { PageAction, Runtime, Tabs } from "webextension-polyfill";
-import { addMessageListener, TabMessage } from "./ipc";
+import { JBI, JiraMap } from "./config";
+import { addMessageListener, JiraMessage, TabMessage } from "./ipc";
 
-interface LinkedBugzilla {
-  type: "linked-bugzilla";
-  id: string;
-  jira: URL;
-  icon: string;
-  title: string;
-}
-
-interface UnlinkedBugzilla {
-  type: "unlinked-bugzilla";
-  id: string;
-  icon: string;
-  title: string;
-}
-
-interface LinkedJira {
-  type: "linked-jira";
+interface Action {
   project: string;
-  id: string;
-  bug: URL;
-  icon: string;
-  title: string;
+  whiteboard: string;
 }
 
-interface UnlinkedJira {
-  type: "unlinked-jira";
-  project: string;
-  id: string;
-  icon: string;
+const TabMap = new Map<number, TabMessage>();
+let Actions: Action[] = [];
+
+interface PageActionConfig {
   title: string;
+  icon: string;
 }
 
-type TabContent =
-  | LinkedBugzilla
-  | UnlinkedBugzilla
-  | LinkedJira
-  | UnlinkedJira
-  | undefined;
-
-const TabMap = new Map<number, TabContent>();
-
-function contentFromMessage(message: TabMessage): TabContent {
+function pageActionConfig(message: TabMessage): PageActionConfig | null {
   switch (message.source) {
     case "bugzilla": {
       if (message.jira) {
         return {
-          type: "linked-bugzilla",
-          id: message.id,
-          jira: new URL(message.jira),
           title: "Open Jira Issue",
           icon: "jira.ico",
         };
@@ -59,11 +29,15 @@ function contentFromMessage(message: TabMessage): TabContent {
     case "jira": {
       if (message.bug) {
         return {
-          type: "linked-jira",
-          project: message.project,
-          id: message.id,
-          bug: new URL(message.bug),
           title: "Open Bugzilla Bug",
+          icon: "bugzilla.ico",
+        };
+      }
+
+      let action = Actions.find((ac) => ac.project == message.project);
+      if (action) {
+        return {
+          title: "Create Bugzilla Bug",
           icon: "bugzilla.ico",
         };
       }
@@ -71,18 +45,64 @@ function contentFromMessage(message: TabMessage): TabContent {
     }
   }
 
-  return undefined;
+  return null;
 }
 
 function openPage(
-  url: URL,
+  url: string,
   openerTabId: number | undefined,
   modifiers: PageAction.OnClickDataModifiersItemEnum[]
 ) {
   browser.tabs.create({
     openerTabId,
-    url: url.toString(),
+    url: url,
   });
+}
+
+function updatePageAction(tabId: number, message: TabMessage) {
+  let config = pageActionConfig(message);
+
+  if (config) {
+    browser.pageAction.setTitle({
+      tabId,
+      title: config.title,
+    });
+    browser.pageAction.setIcon({
+      tabId,
+      path: `icons/${config.icon}`,
+    });
+    browser.pageAction.show(tabId);
+  } else {
+    browser.pageAction.hide(tabId);
+  }
+}
+
+function createBug(
+  jira: JiraMessage,
+  openerTabId: number,
+  modifiers: PageAction.OnClickDataModifiersItemEnum[]
+) {
+  try {
+    let action = Actions.find((ac) => ac.project == jira.project);
+    if (!action) {
+      throw new Error(`Unknown action for ${jira.project}`);
+    }
+
+    let page = new URL(jira.page);
+    let bugzilla = JiraMap.get(page.origin);
+
+    let createUrl = new URL("/enter_bug.cgi", bugzilla);
+    createUrl.searchParams.set("short_desc", jira.summary);
+    createUrl.searchParams.set("status_whiteboard", `[${action.whiteboard}]`);
+    createUrl.searchParams.set(
+      "see_also",
+      `${page.origin}/browse/${jira.project}-${jira.id}`
+    );
+
+    openPage(createUrl.toString(), openerTabId, modifiers);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function onPageActionClicked(
@@ -99,18 +119,24 @@ function onPageActionClicked(
     return;
   }
 
-  let content = TabMap.get(tab.id);
-  if (!content) {
+  let message = TabMap.get(tab.id);
+  if (!message) {
     return;
   }
 
-  switch (content.type) {
-    case "linked-bugzilla": {
-      openPage(content.jira, tab.id, modifiers);
+  switch (message.source) {
+    case "bugzilla": {
+      if (message.jira) {
+        openPage(message.jira, tab.id, modifiers);
+      }
       break;
     }
-    case "linked-jira": {
-      openPage(content.bug, tab.id, modifiers);
+    case "jira": {
+      if (message.bug) {
+        openPage(message.bug, tab.id, modifiers);
+      } else {
+        createBug(message, tab.id, modifiers);
+      }
       break;
     }
   }
@@ -122,39 +148,55 @@ function onMessage(message: TabMessage, sender: Runtime.MessageSender) {
     return;
   }
 
-  let content = contentFromMessage(message);
-  if (content) {
-    browser.pageAction.setTitle({
-      tabId,
-      title: content.title,
-    });
-    browser.pageAction.setIcon({
-      tabId,
-      path: `icons/${content.icon}`,
-    });
-    browser.pageAction.show(tabId);
-  } else {
-    browser.pageAction.hide(tabId);
-  }
-
-  TabMap.set(tabId, content);
+  console.log("onMessage", message);
+  TabMap.set(tabId, message);
+  updatePageAction(tabId, message);
 }
 
-addMessageListener(onMessage);
-
-browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
-  TabMap.delete(removedTabId);
-});
-
-browser.tabs.onRemoved.addListener((removedTabId) =>
-  TabMap.delete(removedTabId)
-);
-
-browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.url) {
-    browser.pageAction.hide(tabId);
-    TabMap.delete(tabId);
+async function loadConfig() {
+  let response = await fetch(new URL("/whiteboard_tags/", JBI));
+  if (!response.ok) {
+    return;
   }
-});
 
-browser.pageAction.onClicked.addListener(onPageActionClicked);
+  let actions: Record<string, any> = await response.json();
+  Actions = [];
+
+  for (let action of Object.values(actions)) {
+    let { jira_project_key: project, whiteboard_tag: whiteboard } =
+      action.parameters ?? {};
+
+    if (project && whiteboard) {
+      Actions.push({ project, whiteboard });
+    }
+  }
+
+  for (let [tabId, message] of TabMap) {
+    updatePageAction(tabId, message);
+  }
+}
+
+function init() {
+  addMessageListener(onMessage);
+
+  browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
+    TabMap.delete(removedTabId);
+  });
+
+  browser.tabs.onRemoved.addListener((removedTabId) =>
+    TabMap.delete(removedTabId)
+  );
+
+  browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.url) {
+      browser.pageAction.hide(tabId);
+      TabMap.delete(tabId);
+    }
+  });
+
+  browser.pageAction.onClicked.addListener(onPageActionClicked);
+
+  loadConfig();
+}
+
+init();

@@ -1,4 +1,5 @@
-// const JBI = "https://jbi.services.mozilla.com";
+export const JBI = "https://jbi.services.mozilla.com";
+
 const CONFIGS = [
   // Dev
   {

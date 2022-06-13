@@ -2,10 +2,27 @@ import { JiraMap } from "./config";
 import { sendMessage } from "./ipc";
 
 const GraphQLEndpoint = "/rest/graphql/1/";
+const GiraEndpoint = "/rest/gira/1/";
 
-const jiraWeblinks = `
-  query issueViewRemoteDataQuery($issueKey: String!) {
-    issue: viewIssue(issueKey: $issueKey) {
+const jiraFields = `
+  query issueFields($issueKey: String!) {
+    issue(issueIdOrKey: $issueKey, latestVersion: true, screen: "view") {
+      fields {
+        key
+        content
+      }
+    }
+  }
+`;
+
+interface JiraField {
+  key: string;
+  content: string;
+}
+
+const jiraWebLinks = `
+  query issueWebLinks($issueKey: String!) {
+    viewIssue(issueKey: $issueKey) {
       remoteLinks {
         webLinks(allowThirdParties: true, orderBy: \"-id\") {
           links {
@@ -17,17 +34,17 @@ const jiraWeblinks = `
     }
   }
 `;
+
 interface JiraWebLink {
   href: string;
   linkText: string;
 }
 
 async function graphql(
-  server: URL,
+  endpoint: URL,
   query: string,
   variables: Record<string, string> = {}
 ): Promise<any> {
-  let endpoint = new URL(GraphQLEndpoint, server);
   let response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -47,15 +64,32 @@ async function graphql(
   return json.data;
 }
 
-async function fetchJiraWeblinks(
+async function fetchJiraWebLinks(
   page: URL,
   project: string,
   id: string
-): Promise<JiraWebLink[]> {
-  let data = await graphql(page, jiraWeblinks, {
+): Promise<Record<string, string>> {
+  let data = await graphql(new URL(GiraEndpoint, page), jiraWebLinks, {
     issueKey: `${project}-${id}`,
   });
-  return data.issue.remoteLinks.webLinks.links;
+
+  let links: JiraWebLink[] = data.viewIssue.remoteLinks.webLinks.links;
+  return Object.fromEntries(
+    links.map(({ linkText, href }) => [linkText, href])
+  );
+}
+
+async function fetchJiraFields(
+  page: URL,
+  project: string,
+  id: string
+): Promise<Record<string, string>> {
+  let data = await graphql(new URL(GraphQLEndpoint, page), jiraFields, {
+    issueKey: `${project}-${id}`,
+  });
+
+  let fields: JiraField[] = data.issue.fields;
+  return Object.fromEntries(fields.map(({ key, content }) => [key, content]));
 }
 
 async function parseData() {
@@ -77,32 +111,26 @@ async function parseData() {
     return;
   }
 
-  let links = await fetchJiraWeblinks(url, project, id);
-  for (let link of links) {
-    if (link.linkText != "Bugzilla Ticket") {
-      continue;
-    }
-
-    let bug = new URL(link.href);
-    if (bug.origin != bugzilla.origin) {
-      continue;
-    }
-
-    sendMessage({
-      source: "jira",
-      project,
-      id,
-      bug: link.href,
-    });
-
+  let fields = await fetchJiraFields(url, project, id);
+  if (!fields.summary) {
+    console.warn(`Unknown summary for issue ${project}-${id}`);
     return;
+  }
+  let links = await fetchJiraWebLinks(url, project, id);
+
+  let bugLink = links["Bugzilla Ticket"] ?? null;
+  let bug = bugLink ? new URL(bugLink) : null;
+  if (bug?.origin != bugzilla.origin) {
+    bug = null;
   }
 
   sendMessage({
     source: "jira",
+    page: url.toString(),
     project,
     id,
-    bug: null,
+    summary: fields.summary,
+    bug: bug?.href ?? null,
   });
 }
 
