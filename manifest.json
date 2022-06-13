@@ -1,0 +1,27 @@
+{
+  "manifest_version": 2,
+  "name": "Jira Bugzilla Integration Extension",
+  "description": "Supplements the Jira Bugzilla Integration with in-browser assistance.",
+  "version": "1.0",
+
+  "page_action": {
+    "default_icon": "icons/jira.svg",
+    "default_title": "Open in Jira"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://bugzilla-dev.allizom.org/*",
+        "https://bugzilla.mozilla.org/*"
+      ],
+      "js": ["build/bugzilla.js"]
+    }
+  ],
+
+  "permissions": ["tabs"],
+
+  "background": {
+    "scripts": ["build/background.js"]
+  }
+}

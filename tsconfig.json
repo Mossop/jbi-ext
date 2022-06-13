@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "lib": ["es2021", "DOM"],
+    "module": "es2020",
+    "target": "es2021",
+
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "noEmit": true,
+
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "strictPropertyInitialization": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+  },
+
+  "include": ["src/**/*", "rollup.config.ts"],
+}
