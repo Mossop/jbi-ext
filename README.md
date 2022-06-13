@@ -1,4 +1,4 @@
-# Jira Bugzilla Integration Extension
+# Jira Bugzilla Sync Companion
 
 The Jira Bugzilla Integration automatically links Bugzilla bugs to Jira stories
 and syncs changes made in Bugzilla to Jira.
