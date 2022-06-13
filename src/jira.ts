@@ -116,6 +116,17 @@ async function fetchJiraId(
 let project: string | undefined = undefined;
 let id: string | undefined = undefined;
 
+function findBugLink(links: Record<string, string>, bugzilla: URL): URL | null {
+  for (let href of Object.values(links)) {
+    let bug = new URL(href);
+    if (bug.origin == bugzilla.origin && bug.pathname == "/show_bug.cgi") {
+      return bug;
+    }
+  }
+
+  return null;
+}
+
 async function parseData() {
   let url = new URL(window.location.href);
 
@@ -142,12 +153,7 @@ async function parseData() {
   }
   let links = await fetchJiraWebLinks(url, project, id);
 
-  let bugLink = links["Bugzilla Ticket"] ?? null;
-  let bug = bugLink ? new URL(bugLink) : null;
-  if (bug?.origin != bugzilla.origin) {
-    bug = null;
-  }
-
+  let bug = findBugLink(links, bugzilla);
   let jira = new URL(`/browse/${project}-${id}`, url);
 
   sendMessage("discovery", {
@@ -170,35 +176,42 @@ addMessageListener("link", async (link: LinkDiscovered) => {
     return;
   }
 
+  let bugzilla = JiraMap.get(jira.origin);
+  if (!bugzilla) {
+    console.warn(`No known Bugzilla for ${jira.origin}`);
+    return;
+  }
+
   let links = await fetchJiraWebLinks(jira, project, id);
-  if (!links["Bugzilla Ticket"]) {
-    let icon = new URL("/favicon.ico", link.bug);
-    let internalId = await fetchJiraId(jira, project, id);
-    let remoteLink = new URL(
-      `/rest/api/3/issue/${internalId}/remotelink`,
-      jira
-    );
+  let bug = findBugLink(links, bugzilla);
 
-    let response = await content.fetch(remoteLink, {
-      method: "POST",
-      mode: "cors",
-      referrerPolicy: "origin-when-cross-origin",
-      headers: {
-        "Content-Type": "application/json",
-        Origin: jira.origin,
+  if (bug) {
+    return;
+  }
+
+  let icon = new URL("/favicon.ico", link.bug);
+  let internalId = await fetchJiraId(jira, project, id);
+  let remoteLink = new URL(`/rest/api/3/issue/${internalId}/remotelink`, jira);
+
+  let response = await content.fetch(remoteLink, {
+    method: "POST",
+    mode: "cors",
+    referrerPolicy: "origin-when-cross-origin",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: jira.origin,
+    },
+    body: JSON.stringify({
+      object: {
+        icon: { url16x16: icon.toString() },
+        title: "Bugzilla Ticket",
+        url: link.bug,
       },
-      body: JSON.stringify({
-        object: {
-          icon: { url16x16: icon.toString() },
-          title: "Bugzilla Ticket",
-          url: link.bug,
-        },
-      }),
-    });
+    }),
+  });
 
-    if (response.ok) {
-      window.location.reload();
-    }
+  if (response.ok) {
+    window.location.reload();
   }
 });
 

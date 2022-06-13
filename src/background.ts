@@ -20,6 +20,8 @@ interface PageActionConfig {
   icon: string;
 }
 
+const PendingBugs = new Map<string, number>();
+
 function pageActionConfig(message: TabMessage): PageActionConfig | null {
   switch (message.source) {
     case "bugzilla": {
@@ -105,6 +107,7 @@ function createBug(
     );
 
     openPage(createUrl.toString(), openerTabId, modifiers);
+    PendingBugs.set(jira.jira, openerTabId);
   } catch (e) {
     console.error(e);
   }
@@ -157,13 +160,13 @@ function onMessage(message: TabMessage, sender: Runtime.MessageSender) {
   updatePageAction(tabId, message);
 
   if (message.source == "bugzilla" && message.jira) {
-    for (let [tabId, tabMessage] of TabMap) {
-      if (tabMessage.source == "jira" && tabMessage.jira == message.jira) {
-        sendTabMessage("link", tabId, {
-          bug: message.bug,
-          jira: message.jira,
-        });
-      }
+    let tabId = PendingBugs.get(message.jira);
+    if (tabId) {
+      PendingBugs.delete(message.jira);
+      sendTabMessage("link", tabId, {
+        bug: message.bug,
+        jira: message.jira,
+      });
     }
   }
 }
