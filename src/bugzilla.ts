@@ -40,7 +40,7 @@ function parseData() {
   sendMessage({
     source: "bugzilla",
     id,
-    jiraIssue: jiraIssue?.href,
+    jira: jiraIssue?.href ?? null,
   });
 }
 

@@ -16,6 +16,13 @@
         "https://bugzilla.mozilla.org/*"
       ],
       "js": ["build/bugzilla.js"]
+    },
+    {
+      "matches": [
+        "https://mozilla-hub-sandbox-721.atlassian.net/*",
+        "https://mozilla-hub.atlassian.net/*"
+      ],
+      "js": ["build/jira.js"]
     }
   ],
 

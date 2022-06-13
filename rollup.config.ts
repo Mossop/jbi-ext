@@ -19,4 +19,4 @@ function config(name: string): RollupOptions {
   };
 }
 
-export default [config("background"), config("bugzilla")];
+export default [config("background"), config("bugzilla"), config("jira")];

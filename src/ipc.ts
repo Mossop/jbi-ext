@@ -3,10 +3,17 @@ import browser, { Runtime } from "webextension-polyfill";
 export interface BugzillaMessage {
   source: "bugzilla";
   id: string;
-  jiraIssue: string | undefined;
+  jira: string | null;
 }
 
-export type TabMessage = BugzillaMessage;
+export interface JiraMessage {
+  source: "jira";
+  project: string;
+  id: string;
+  bug: string | null;
+}
+
+export type TabMessage = BugzillaMessage | JiraMessage;
 
 export function sendMessage(message: TabMessage) {
   browser.runtime.sendMessage(message);

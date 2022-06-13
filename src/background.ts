@@ -1,35 +1,73 @@
 import browser, { PageAction, Runtime, Tabs } from "webextension-polyfill";
 import { addMessageListener, TabMessage } from "./ipc";
 
-interface LinkedBug {
-  type: "linked-bug";
+interface LinkedBugzilla {
+  type: "linked-bugzilla";
   id: string;
-  jiraIssue: URL;
+  jira: URL;
   icon: string;
   title: string;
 }
 
-interface UnlinkedBug {
-  type: "unlinked-bug";
+interface UnlinkedBugzilla {
+  type: "unlinked-bugzilla";
   id: string;
   icon: string;
   title: string;
 }
 
-type TabContent = LinkedBug | UnlinkedBug | undefined;
+interface LinkedJira {
+  type: "linked-jira";
+  project: string;
+  id: string;
+  bug: URL;
+  icon: string;
+  title: string;
+}
+
+interface UnlinkedJira {
+  type: "unlinked-jira";
+  project: string;
+  id: string;
+  icon: string;
+  title: string;
+}
+
+type TabContent =
+  | LinkedBugzilla
+  | UnlinkedBugzilla
+  | LinkedJira
+  | UnlinkedJira
+  | undefined;
 
 const TabMap = new Map<number, TabContent>();
 
 function contentFromMessage(message: TabMessage): TabContent {
-  if (message.source == "bugzilla") {
-    if (message.jiraIssue) {
-      return {
-        type: "linked-bug",
-        id: message.id,
-        jiraIssue: new URL(message.jiraIssue),
-        title: "Open Jira Issue",
-        icon: "jira.ico",
-      };
+  switch (message.source) {
+    case "bugzilla": {
+      if (message.jira) {
+        return {
+          type: "linked-bugzilla",
+          id: message.id,
+          jira: new URL(message.jira),
+          title: "Open Jira Issue",
+          icon: "jira.ico",
+        };
+      }
+      break;
+    }
+    case "jira": {
+      if (message.bug) {
+        return {
+          type: "linked-jira",
+          project: message.project,
+          id: message.id,
+          bug: new URL(message.bug),
+          title: "Open Bugzilla Bug",
+          icon: "bugzilla.ico",
+        };
+      }
+      break;
     }
   }
 
@@ -67,8 +105,12 @@ function onPageActionClicked(
   }
 
   switch (content.type) {
-    case "linked-bug": {
-      openPage(content.jiraIssue, tab.id, modifiers);
+    case "linked-bugzilla": {
+      openPage(content.jira, tab.id, modifiers);
+      break;
+    }
+    case "linked-jira": {
+      openPage(content.bug, tab.id, modifiers);
       break;
     }
   }
