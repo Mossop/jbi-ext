@@ -1,14 +1,30 @@
 {
   "name": "jbi-ext",
   "version": "1.0.0",
-  "description": "Jira Bugzilla Integration Extension",
+  "description": "Jira Bugzilla Integration Companion",
   "repository": "https://github.com/Mossop/jbi-ext",
   "author": "Dave Townsend <dtownsend@oxymoronical.com>",
   "license": "MIT",
+  "webExt": {
+    "ignoreFiles": [
+      ".*",
+      "src",
+      "build/*.map",
+      "package.json",
+      "LICENSE.txt",
+      "README.md",
+      "rollup.config.ts",
+      "tsconfig.json",
+      "yarn.lock"
+    ]
+  },
   "scripts": {
-    "lint": "prettier --check .",
+    "clean": "rm -rf build web-ext-artifacts",
+    "lint": "web-ext lint",
     "watch": "rollup --configPlugin @rollup/plugin-typescript --config rollup.config.ts --watch",
-    "build": "rollup --configPlugin @rollup/plugin-typescript --config rollup.config.ts"
+    "build": "rollup --configPlugin @rollup/plugin-typescript --config rollup.config.ts",
+    "prepackage": "yarn clean && yarn build",
+    "package": "web-ext build --overwrite-dest && git archive -o web-ext-artifacts/source.zip HEAD"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^8.3.3",

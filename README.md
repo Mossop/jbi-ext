@@ -11,3 +11,18 @@ Features:
 * When viewing a Jira ticket that links to a Bugzilla bug an icon in the address bar provides a quick link there.
 * When viewing a Bugzilla bug that links to a Jira ticket an icon in the address bar provides a quick link there.
 * When viewing a Jira ticket in a known project with no bug link an icon in the address bar allows you to create a new linked bug.
+
+## Developing
+
+```
+$ yarn install
+$ yarn build
+```
+
+You can now install the add-on in Firefox through `about:debugging`.
+
+## Building for Release
+
+```
+# yarn package
+```
