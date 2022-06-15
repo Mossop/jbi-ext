@@ -1,6 +1,6 @@
 {
   "name": "jbi-ext",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Jira Bugzilla Sync Companion",
   "repository": "https://github.com/Mossop/jbi-ext",
   "author": "Dave Townsend <dtownsend@oxymoronical.com>",
