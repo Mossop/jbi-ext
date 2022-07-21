@@ -1,5 +1,9 @@
 # Change Log
 
+# [1.0.3](https://github.com/Mossop/jbi-ext/tree/v1.0.3) ([diff](https://github.com/Mossop/jbi-ext/compare/v1.0.2...v1.0.3))
+
+* Fix for JBI v3.0.0
+
 # [1.0.2](https://github.com/Mossop/jbi-ext/tree/v1.0.2) ([diff](https://github.com/Mossop/jbi-ext/compare/v1.0.1...v1.0.2))
 
 * Fix passing through parameters on the bug creation page (see https://bugzilla.mozilla.org/show_bug.cgi?id=1774403)

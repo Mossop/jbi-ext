@@ -181,8 +181,10 @@ async function loadConfig() {
   Actions = [];
 
   for (let action of Object.values(actions)) {
-    let { jira_project_key: project, whiteboard_tag: whiteboard } =
-      action.parameters ?? {};
+    let {
+      parameters: { jira_project_key: project },
+      whiteboard_tag: whiteboard,
+    } = action;
 
     if (project && whiteboard) {
       Actions.push({ project, whiteboard });
