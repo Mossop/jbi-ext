@@ -7,6 +7,7 @@ import { src, dest } from "gulp";
 
 const SRC = path.join(__dirname, "src");
 const TARGET = path.join(__dirname, "build");
+const PACKAGE = path.join(__dirname, "package");
 
 function memoized<T>(inner: () => Promise<T>): () => Promise<T> {
   let cached: Promise<T> | undefined = undefined;
@@ -63,7 +64,7 @@ const backgroundScripts = memoized(async (): Promise<string[]> => {
 export function clean() {
   return Promise.all([
     fs.rm(TARGET, { recursive: true, force: true }),
-    fs.rm(path.join(__dirname, "web-ext-artifacts"), {
+    fs.rm(PACKAGE, {
       recursive: true,
       force: true,
     }),
@@ -86,6 +87,34 @@ function rollupOptions(script: string): [InputOptions, OutputOptions] {
       format: "iife",
     },
   ];
+}
+
+export async function lintExtension() {
+  // @ts-ignore
+  let { cmd } = await import("web-ext");
+  return cmd.lint({ sourceDir: TARGET }, { shouldExitProgram: false });
+}
+
+export async function packageExtension() {
+  // @ts-ignore
+  let { cmd } = await import("web-ext");
+  await cmd.build({
+    sourceDir: TARGET,
+    artifactsDir: PACKAGE,
+    overwriteDest: true,
+  });
+}
+
+export async function packageSource() {
+  let { execa } = await import("execa");
+  await ensureDir(PACKAGE);
+
+  await execa("git", [
+    "archive",
+    "-o",
+    path.join(PACKAGE, "source.zip"),
+    "HEAD",
+  ]);
 }
 
 export async function buildJS() {
@@ -136,4 +165,9 @@ export function copyResources() {
 
 export const build = gulp.parallel(buildManifest, buildJS, copyResources);
 export const cleanBuild = gulp.series(clean, build);
+export const lint = gulp.series(build, lintExtension);
+export const buildPackage = gulp.series(
+  cleanBuild,
+  gulp.parallel(packageSource, packageExtension)
+);
 export default build;
