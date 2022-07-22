@@ -23,5 +23,11 @@
     "strictBindCallApply": true,
   },
 
-  "include": ["src/**/*", "rollup.config.ts"],
+  "include": ["src/**/*", "gulpfile.ts"],
+
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
 }

@@ -19,18 +19,20 @@
     ]
   },
   "scripts": {
-    "clean": "rm -rf build web-ext-artifacts",
+    "clean": "gulp clean",
     "lint": "web-ext lint",
-    "watch": "rollup --configPlugin @rollup/plugin-typescript --config rollup.config.ts --watch",
-    "build": "rollup --configPlugin @rollup/plugin-typescript --config rollup.config.ts",
-    "prepackage": "yarn clean && yarn build",
+    "build": "gulp",
+    "prepackage": "gulp cleanBuild",
     "package": "web-ext build --overwrite-dest && git archive -o web-ext-artifacts/source.zip HEAD"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^8.3.3",
+    "@types/gulp": "^4.0.9",
     "@types/webextension-polyfill": "^0.9.0",
+    "gulp": "^4.0.2",
     "prettier": "^2.6.2",
     "rollup": "^2.75.6",
+    "ts-node": "^10.9.1",
     "tslib": "^2.4.0",
     "typescript": "^4.7.3",
     "web-ext": "^7.0.0"

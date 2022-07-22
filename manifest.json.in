@@ -1,8 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "Jira Bugzilla Sync Companion",
   "description": "Supplements the Jira Bugzilla Integration with in-browser assistance.",
-  "version": "1.0.3",
 
   "page_action": {
     "default_icon": "icons/jira.svg",
@@ -15,20 +13,26 @@
         "https://bugzilla-dev.allizom.org/*",
         "https://bugzilla.mozilla.org/*"
       ],
-      "js": ["build/bugzilla.js"]
+      "js": ["src/bugzilla.ts"]
     },
     {
       "matches": [
         "https://mozilla-hub-sandbox-721.atlassian.net/*",
         "https://mozilla-hub.atlassian.net/*"
       ],
-      "js": ["build/jira.js"]
+      "js": ["src/jira.ts"]
     }
   ],
 
   "permissions": ["tabs", "https://jbi.services.mozilla.com/*"],
 
   "background": {
-    "scripts": ["build/background.js"]
+    "scripts": ["src/background.ts"]
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{34996bc7-781f-4c75-a94e-99796d3f6656}"
+    }
   }
 }
