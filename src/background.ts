@@ -174,7 +174,7 @@ function onMessage(message: TabMessage, sender: Runtime.MessageSender) {
 async function loadConfig() {
   let response = await fetch(new URL("/whiteboard_tags/", JBI));
   if (!response.ok) {
-    return;
+    throw new Error(`Failed to load config: ${response.statusText}`);
   }
 
   let actions: Record<string, any> = await response.json();
@@ -191,12 +191,16 @@ async function loadConfig() {
     }
   }
 
+  console.log("Loaded JBI config", Actions);
+
   for (let [tabId, message] of TabMap) {
     updatePageAction(tabId, message);
   }
 }
 
 function init() {
+  loadConfig().catch(console.error);
+
   addMessageListener("discovery", onMessage);
 
   browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
@@ -215,8 +219,6 @@ function init() {
   });
 
   browser.pageAction.onClicked.addListener(onPageActionClicked);
-
-  loadConfig();
 }
 
 init();
