@@ -1,5 +1,9 @@
 # Change Log
 
+# [1.0.4](https://github.com/Mossop/jbi-ext/tree/v1.0.4) ([diff](https://github.com/Mossop/jbi-ext/compare/v1.0.3...v1.0.4))
+
+* Force the full product chooser when creating new bugs.
+
 # [1.0.3](https://github.com/Mossop/jbi-ext/tree/v1.0.3) ([diff](https://github.com/Mossop/jbi-ext/compare/v1.0.2...v1.0.3))
 
 * Fix for JBI v3.0.0

@@ -99,6 +99,7 @@ function createBug(
     let bugzilla = JiraMap.get(page.origin);
 
     let createUrl = new URL("/enter_bug.cgi", bugzilla);
+    createUrl.searchParams.set("full", "1");
     createUrl.searchParams.set("short_desc", jira.summary);
     createUrl.searchParams.set("status_whiteboard", `[${action.whiteboard}]`);
     createUrl.searchParams.set(
