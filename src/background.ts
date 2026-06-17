@@ -1,4 +1,6 @@
 import { PageAction, Runtime, Tabs } from "webextension-polyfill";
+import { parse as parseYaml } from "yaml";
+
 import { JBI, JiraMap } from "./config";
 import {
   addMessageListener,
@@ -173,15 +175,16 @@ function onMessage(message: TabMessage, sender: Runtime.MessageSender) {
 }
 
 async function loadConfig() {
-  let response = await fetch(new URL("/whiteboard_tags/", JBI));
+  let response = await fetch(JBI);
   if (!response.ok) {
     throw new Error(`Failed to load config: ${response.statusText}`);
   }
 
-  let actions: Record<string, any> = await response.json();
+  let actions: Record<string, any>[] = parseYaml(await response.text());
+
   Actions = [];
 
-  for (let action of Object.values(actions)) {
+  for (let action of actions) {
     let {
       parameters: { jira_project_key: project },
       whiteboard_tag: whiteboard,
