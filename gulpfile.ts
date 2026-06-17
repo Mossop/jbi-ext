@@ -132,7 +132,7 @@ export async function buildJS() {
 
 export async function buildManifest() {
   const scriptPath = (script: string) =>
-    path.join("scripts", path.relative(SRC, script).replace(".ts", ".js"));
+    path.join("scripts", path.relative(SRC, script).replace(".ts", ".js")).replaceAll("\\", "/");
 
   await ensureDir(TARGET);
 
