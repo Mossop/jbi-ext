@@ -1,5 +1,6 @@
 import gulp from "gulp";
 import typescript from "@rollup/plugin-typescript";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
 import { promises as fs } from "fs";
 import path from "path";
 import { rollup, OutputOptions, InputOptions } from "rollup";
@@ -77,13 +78,13 @@ function rollupOptions(script: string): [InputOptions, OutputOptions] {
   return [
     {
       input: script,
-      plugins: [typescript()],
+      plugins: [typescript(), nodeResolve()],
     },
     {
       dir: path.join(TARGET, "scripts"),
       name,
       sourcemap: true,
-      interop: false,
+      interop: "auto",
       format: "iife",
     },
   ];
