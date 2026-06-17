@@ -1,4 +1,4 @@
-export const JBI = "https://jbi.services.mozilla.com";
+export const JBI = new URL("https://raw.githubusercontent.com/mozilla/jira-bugzilla-integration/refs/heads/main/config/config.prod.yaml");
 
 const CONFIGS = [
   // Dev
