@@ -1,7 +1,7 @@
 import { PageAction, Runtime, Tabs } from "webextension-polyfill";
 import { parse as parseYaml } from "yaml";
 
-import { JBI, JiraMap } from "./config";
+import { JBI_CONFIG, JiraMap } from "./config";
 import {
   addMessageListener,
   JiraMessage,
@@ -60,7 +60,7 @@ function pageActionConfig(message: TabMessage): PageActionConfig | null {
 function openPage(
   url: string,
   openerTabId: number | undefined,
-  modifiers: PageAction.OnClickDataModifiersItemEnum[]
+  modifiers: PageAction.OnClickDataModifiersItemEnum[],
 ) {
   browser.tabs.create({
     openerTabId,
@@ -89,7 +89,7 @@ function updatePageAction(tabId: number, message: TabMessage) {
 function createBug(
   jira: JiraMessage,
   openerTabId: number,
-  modifiers: PageAction.OnClickDataModifiersItemEnum[]
+  modifiers: PageAction.OnClickDataModifiersItemEnum[],
 ) {
   try {
     let action = Actions.find((ac) => ac.project == jira.project);
@@ -106,7 +106,7 @@ function createBug(
     createUrl.searchParams.set("status_whiteboard", `[${action.whiteboard}]`);
     createUrl.searchParams.set(
       "see_also",
-      `${page.origin}/browse/${jira.project}-${jira.id}`
+      `${page.origin}/browse/${jira.project}-${jira.id}`,
     );
 
     openPage(createUrl.toString(), openerTabId, modifiers);
@@ -118,7 +118,7 @@ function createBug(
 
 function onPageActionClicked(
   tab: Tabs.Tab,
-  clickData: PageAction.OnClickData | undefined
+  clickData: PageAction.OnClickData | undefined,
 ) {
   if (!clickData) {
     return;
@@ -175,7 +175,7 @@ function onMessage(message: TabMessage, sender: Runtime.MessageSender) {
 }
 
 async function loadConfig() {
-  let response = await fetch(JBI);
+  let response = await fetch(JBI_CONFIG);
   if (!response.ok) {
     throw new Error(`Failed to load config: ${response.statusText}`);
   }
@@ -212,7 +212,7 @@ function init() {
   });
 
   browser.tabs.onRemoved.addListener((removedTabId) =>
-    TabMap.delete(removedTabId)
+    TabMap.delete(removedTabId),
   );
 
   browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
