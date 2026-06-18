@@ -14,15 +14,15 @@ Features:
 
 ## Developing
 
-```
-$ yarn install
-$ yarn build
+```shell
+$ npm install
+$ npm run build
 ```
 
 You can now install the add-on in Firefox through `about:debugging`.
 
 ## Building for Release
 
-```
-# yarn package
+```shell
+$ npm run package
 ```
