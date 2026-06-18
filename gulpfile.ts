@@ -161,7 +161,7 @@ export async function buildManifest() {
 }
 
 export function copyResources() {
-  return src("icons/**").pipe(dest(path.join(TARGET, "icons")));
+  return src("icons/**", { encoding: false }).pipe(dest(path.join(TARGET, "icons")));
 }
 
 export const build = gulp.parallel(buildManifest, buildJS, copyResources);
